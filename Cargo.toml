@@ -1,0 +1,34 @@
+[package]
+name = "evil-apple-juice-esp32-rs"
+version = "0.1.0"
+authors = ["lz1998 <875543533@qq.com>"]
+edition = "2021"
+resolver = "2"
+rust-version = "1.71"
+
+[profile.release]
+opt-level = "s"
+strip = true
+
+[profile.dev]
+debug = true    # Symbols are nice and they don't increase the size on Flash
+opt-level = "z"
+
+[features]
+default = ["alloc", "esp-idf-svc/native", "esp-idf-svc/panic_handler", "esp-idf-svc/alloc_handler", "esp-idf-svc/libstart"]
+
+pio = ["esp-idf-svc/pio"]
+std = ["alloc", "esp-idf-svc/binstart", "esp-idf-svc/std"]
+alloc = ["esp-idf-svc/alloc"]
+nightly = ["esp-idf-svc/nightly"]
+experimental = ["esp-idf-svc/experimental"]
+embassy = ["esp-idf-svc/embassy-sync", "esp-idf-svc/critical-section", "esp-idf-svc/embassy-time-driver"]
+
+[dependencies]
+log = { version = "0.4", default-features = false }
+esp-idf-svc = { version = "0.47.1", default-features = false }
+esp32-nimble = { git = "https://github.com/taks/esp32-nimble.git", branch = "develop", default-features = false, features = ["no_std"] }
+esp-idf-hal = { version = "0.42", default-features = false, features = ["embassy-sync"] }
+
+[build-dependencies]
+embuild = "0.31.3"
