@@ -3,12 +3,12 @@
 
 mod devices;
 
+use devices::DEVICES;
 use esp32_nimble::enums::{ConnMode, OwnAddrType};
 use esp_idf_svc::sys::{esp_fill_random, random};
-use devices::DEVICES;
 
 fn random_addr() -> [u8; 6] {
-    let mut addr = [0u8, 0, 0, 0, 0, 0];
+    let mut addr = [0u8; 6];
     unsafe { esp_fill_random(addr.as_mut_ptr() as *mut core::ffi::c_void, 6) };
     addr
 }
