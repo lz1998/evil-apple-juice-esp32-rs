@@ -9,7 +9,9 @@ use esp_idf_svc::sys::{esp_fill_random, random};
 
 fn random_addr() -> [u8; 6] {
     let mut addr = [0u8; 6];
-    unsafe { esp_fill_random(addr.as_mut_ptr() as *mut core::ffi::c_void, 6) };
+    addr[0] = unsafe { random() as u8 } % 64 + 192; // 192-255
+    unsafe { esp_fill_random(addr[1..6].as_mut_ptr() as *mut core::ffi::c_void, 5) };
+    log::info!("{addr:?}");
     addr
 }
 
