@@ -26,9 +26,10 @@ embassy = ["esp-idf-svc/embassy-sync", "esp-idf-svc/critical-section", "esp-idf-
 
 [dependencies]
 log = { version = "0.4", default-features = false }
-esp-idf-svc = { version = "0.47.1", default-features = false }
-esp32-nimble = { git = "https://github.com/taks/esp32-nimble.git", branch = "develop", default-features = false, features = ["no_std"] }
-esp-idf-hal = { version = "0.42", default-features = false, features = ["embassy-sync"] }
+esp-idf-svc = { version = "0.47.3", default-features = false }
+esp32-nimble = { version="0.3.2", default-features = false, features = ["no_std"] }
+esp-idf-hal = { version = "0.42.5", default-features = false, features = ["embassy-sync"] }
+bstr ={ version="1.8.0", default-features = false, features = ["alloc"] }
 
 [build-dependencies]
 embuild = "0.31.3"
