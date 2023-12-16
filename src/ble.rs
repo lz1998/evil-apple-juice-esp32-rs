@@ -15,8 +15,8 @@ pub fn stop() {
 
 fn random_addr() -> [u8; 6] {
     let mut addr = [0u8; 6];
-    addr[0] = unsafe { random() as u8 } % 64 + 192; // 192-255
-    unsafe { esp_fill_random(addr[1..6].as_mut_ptr() as *mut core::ffi::c_void, 5) };
+    unsafe { esp_fill_random(addr.as_mut_ptr() as *mut core::ffi::c_void, 6) };
+    addr[0] |= 0xF0;
     log::info!("{addr:?}");
     addr
 }
@@ -42,6 +42,7 @@ pub async fn ble_loop(timer: &mut esp_idf_hal::timer::TimerDriver<'_>) {
             ble_advertising.advertisement_type(conn_mode);
             ble_advertising.disc_mode(disc_mode);
             ble_advertising.custom_adv_data(data).unwrap();
+            ble_advertising.start().unwrap();
         }
         timer.delay(timer.tick_hz()).await.unwrap();
         ble_advertising.stop().unwrap();
