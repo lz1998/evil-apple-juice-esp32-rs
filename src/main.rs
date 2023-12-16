@@ -1,27 +1,21 @@
+#![feature(ip_in_core)]
 #![no_std]
 #![no_main]
+extern crate alloc;
 
+mod ble;
 mod devices;
+mod http;
 
-use devices::DEVICES;
-use esp32_nimble::enums::{ConnMode, DiscMode, OwnAddrType};
-use esp_idf_svc::sys::{esp_fill_random, random};
-
-fn random_addr() -> [u8; 6] {
-    let mut addr = [0u8; 6];
-    addr[0] = unsafe { random() as u8 } % 64 + 192; // 192-255
-    unsafe { esp_fill_random(addr[1..6].as_mut_ptr() as *mut core::ffi::c_void, 5) };
-    log::info!("{addr:?}");
-    addr
-}
-
-fn random_mode() -> (ConnMode, DiscMode) {
-    match unsafe { random() } % 3 {
-        0 => (ConnMode::Non, DiscMode::Non),
-        1 => (ConnMode::Non, DiscMode::Gen),
-        _ => (ConnMode::Und, DiscMode::Non),
-    }
-}
+use crate::ble::ble_loop;
+use crate::http::start_http_server;
+use embassy_futures::select::select;
+use esp_idf_hal::peripherals::Peripherals;
+use esp_idf_hal::sys::EspError;
+use esp_idf_svc::eventloop::EspSystemEventLoop;
+use esp_idf_svc::nvs::EspDefaultNvsPartition;
+use esp_idf_svc::timer::EspTaskTimerService;
+use esp_idf_svc::wifi::{AsyncWifi, AuthMethod, EspWifi};
 
 #[no_mangle]
 fn main() {
@@ -33,20 +27,46 @@ fn main() {
     esp_idf_svc::log::EspLogger::initialize_default();
 
     log::info!("Hello, world!");
+    esp_idf_hal::task::block_on(run()).unwrap();
+}
 
-    let ble_device = esp32_nimble::BLEDevice::take();
-    ble_device.set_own_addr_type(OwnAddrType::Random);
-    let ble_advertising = ble_device.get_advertising();
+async fn run() -> Result<(), EspError> {
+    let peripherals = Peripherals::take()?;
 
-    for (name, data) in DEVICES.iter().cycle() {
-        log::info!("{name}");
-        let _ = ble_device.set_rnd_addr(random_addr());
-        let (conn_mode, disc_mode) = random_mode();
-        ble_advertising.advertisement_type(conn_mode);
-        ble_advertising.disc_mode(disc_mode);
-        ble_advertising.custom_adv_data(data).unwrap();
-        ble_advertising.start().unwrap();
-        esp_idf_hal::delay::FreeRtos::delay_ms(1000);
-        ble_advertising.stop().unwrap();
-    }
+    let sys_loop = EspSystemEventLoop::take()?;
+    let timer_service = EspTaskTimerService::new()?;
+    let nvs = EspDefaultNvsPartition::take()?;
+    let mut wifi = AsyncWifi::wrap(
+        EspWifi::new(peripherals.modem, sys_loop.clone(), Some(nvs))?,
+        sys_loop,
+        timer_service,
+    )?;
+
+    let wifi_configuration = esp_idf_svc::wifi::Configuration::AccessPoint(
+        esp_idf_svc::wifi::AccessPointConfiguration {
+            ssid: "esp32".into(),
+            password: "".into(),
+            auth_method: AuthMethod::None,
+            channel: 1,
+            max_connections: 255,
+            ..Default::default()
+        },
+    );
+
+    wifi.set_configuration(&wifi_configuration)?;
+
+    wifi.start().await?;
+    log::info!("Wifi started");
+
+    wifi.wait_netif_up().await?;
+    log::info!("Wifi netif up");
+    log::info!("{:?}", wifi.wifi().ap_netif().get_ip_info());
+
+    let mut timer = esp_idf_hal::timer::TimerDriver::new(
+        peripherals.timer00,
+        &esp_idf_hal::timer::TimerConfig::new(),
+    )?;
+    timer.delay(timer.tick_hz()).await.unwrap();
+    select(start_http_server(), ble_loop(&mut timer)).await;
+    Ok(())
 }
