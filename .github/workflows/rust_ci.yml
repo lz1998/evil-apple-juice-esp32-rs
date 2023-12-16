@@ -33,7 +33,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@master
       - name: Build UI
-        run: npm run build
+        run: npm install && npm run build
         working-directory: vue-ui
       - name: Setup Rust
         uses: esp-rs/xtensa-toolchain@v1.5
