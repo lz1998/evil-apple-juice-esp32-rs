@@ -12,8 +12,8 @@ const handleStop = () => {
 
 <template>
   <div class="buttonGroups">
-    <div class="buttonStart" @click="handleStart">开启</div>
-    <div class="buttonStop" @click="handleStop">关闭</div>
+    <div class="buttonStart" @click="handleStart">Start</div>
+    <div class="buttonStop" @click="handleStop">Stop</div>
   </div>
 </template>
 
