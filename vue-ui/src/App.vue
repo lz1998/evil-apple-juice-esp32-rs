@@ -15,7 +15,6 @@ const showMessage = (msg: string): void => {
 
 const handleStart = (): void => {
   fetch("/api/start")
-    .then((res) => res.json())
     .then((res) => {
       showMessage("已开启");
     });
@@ -23,7 +22,6 @@ const handleStart = (): void => {
 
 const handleStop = (): void => {
   fetch("/api/stop")
-    .then((res) => res.json())
     .then((res) => {
       showMessage("已关闭");
     });
